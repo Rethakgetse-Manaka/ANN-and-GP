@@ -1,3 +1,4 @@
+import java.text.DecimalFormat;
 import java.util.List;
 
 public class Main {
@@ -26,25 +27,56 @@ public class Main {
         }
 
         // Create and train the neural network
-        ANN neuralNetwork = new ANN(trainingInputs[0].length, 10, 1, 0.1);
-        neuralNetwork.train(trainingInputs, trainingOutputs, 1000, 0.01);
+        int inputSize = trainingInputs[0].length;
+        int hiddenSize = 50;
+        int outputSize = 1;
+        double learningRate = 0.0001;
+        double targetError = 0.001;
+        int epochs = 600;
+        ANN neuralNetwork = new ANN(inputSize, hiddenSize, outputSize, learningRate);
+        neuralNetwork.train(trainingInputs, trainingOutputs, epochs, targetError);
 
         // Evaluate the neural network on test data
         evaluateModel(neuralNetwork, testingInputs, testingOutputs);
     }
 
-    private static void evaluateModel(ANN neuralNetwork, double[][] testingInputs, double[][] testingOutputs) {
-        int correctPredictions = 0;
+    private static void evaluateModel(ANN nn, double[][] testingInputs, double[][] testingOutputs) {
+        DecimalFormat df = new DecimalFormat("#.###");
+        int truePositives = 0;
+        int trueNegatives = 0;
+        int falsePositives = 0;
+        int falseNegatives = 0;
+
         for (int i = 0; i < testingInputs.length; i++) {
-            double[] output = neuralNetwork.forward(testingInputs[i]);
+            double[] output = nn.forward(testingInputs[i]);
             int predicted = output[0] >= 0.5 ? 1 : 0; // Assuming binary classification with threshold 0.5
-            if (predicted == (int) testingOutputs[i][0]) {
-                correctPredictions++;
+            int actual = (int) testingOutputs[i][0];
+
+            if (predicted == 1 && actual == 1) {
+                truePositives++;
+            } else if (predicted == 0 && actual == 0) {
+                trueNegatives++;
+            } else if (predicted == 1 && actual == 0) {
+                falsePositives++;
+            } else if (predicted == 0 && actual == 1) {
+                falseNegatives++;
             }
-            System.out.println("Expected: " + (int) testingOutputs[i][0] + ", Predicted: " + predicted);
+
+            System.out.println("Expected: " + actual + ", Predicted: " + predicted);
         }
 
-        double accuracy = (double) correctPredictions / testingInputs.length;
-        System.out.println("Accuracy: " + accuracy);
+        // Calculate metrics
+        double accuracy = (double) (truePositives + trueNegatives) / testingInputs.length;
+        double sensitivity = (double) truePositives / (truePositives + falseNegatives); // also called recall
+        double specificity = (double) trueNegatives / (trueNegatives + falsePositives);
+        double precision = (double) truePositives / (truePositives + falsePositives);
+        double fMeasure = 2 * ((precision * sensitivity) / (precision + sensitivity));
+
+        // Display metrics
+        System.out.println("Accuracy: " + df.format(accuracy * 100) + "%");
+        System.out.println("Sensitivity (Recall): " + df.format(sensitivity));
+        System.out.println("Specificity: " + df.format(specificity));
+        System.out.println("Precision: " + df.format(precision));
+        System.out.println("F-Measure: " + df.format(fMeasure));
     }
 }

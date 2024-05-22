@@ -9,7 +9,7 @@ public class ANN {
     private double[] hiddenLayer;
     private double[] outputLayer;
     private double learningRate;
-    private Random random = new Random();
+    private Random random = new Random(45);
 
     public ANN(int inputSize, int hiddenSize, int outputSize, double learningRate) {
         this.inputSize = inputSize;
@@ -25,7 +25,6 @@ public class ANN {
 
         hiddenLayer = new double[hiddenSize];
         outputLayer = new double[outputSize];
-        System.out.println("ANN created");
     }
 
     private void initializeWeights(double[][] weights) {
@@ -110,7 +109,7 @@ public class ANN {
                 totalError += calculateError(outputs, trainingOutputs[i]);
             }
             totalError /= trainingInputs.length;
-            System.out.println("Epoch " + epoch + " - Error: " + totalError);
+            // System.out.println("Epoch " + epoch + " - Error: " + totalError);
 
             if (totalError < targetError) {
                 break;
