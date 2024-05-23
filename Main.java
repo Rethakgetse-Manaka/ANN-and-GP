@@ -30,9 +30,9 @@ public class Main {
         int inputSize = trainingInputs[0].length;
         int hiddenSize = 50;
         int outputSize = 1;
-        double learningRate = 0.0001;
+        double learningRate = 0.00009;
         double targetError = 0.001;
-        int epochs = 600;
+        int epochs = 400;
         ANN neuralNetwork = new ANN(inputSize, hiddenSize, outputSize, learningRate);
         neuralNetwork.train(trainingInputs, trainingOutputs, epochs, targetError);
 
@@ -67,7 +67,7 @@ public class Main {
 
         // Calculate metrics
         double accuracy = (double) (truePositives + trueNegatives) / testingInputs.length;
-        double sensitivity = (double) truePositives / (truePositives + falseNegatives); // also called recall
+        double sensitivity = (double) truePositives / (truePositives + falseNegatives);
         double specificity = (double) trueNegatives / (trueNegatives + falsePositives);
         double precision = (double) truePositives / (truePositives + falsePositives);
         double fMeasure = 2 * ((precision * sensitivity) / (precision + sensitivity));
