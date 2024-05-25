@@ -31,11 +31,11 @@ public class Main {
         int hiddenSize = 50;
         int outputSize = 1;
         double learningRate = 0.00009;
-        double targetError = 0.001;
+        double targetError = 0.0001;
         int epochs = 400;
         ANN neuralNetwork = new ANN(inputSize, hiddenSize, outputSize, learningRate);
         neuralNetwork.train(trainingInputs, trainingOutputs, epochs, targetError);
-
+        // neuralNetwork.printWeights();
         // Evaluate the neural network on test data
         evaluateModel(neuralNetwork, testingInputs, testingOutputs);
     }

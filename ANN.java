@@ -30,7 +30,7 @@ public class ANN {
     private void initializeWeights(double[][] weights) {
         for (int i = 0; i < weights.length; i++) {
             for (int j = 0; j < weights[i].length; j++) {
-                weights[i][j] = (random.nextDouble() * 2 - 1); // random values between -1 and 1
+                weights[i][j] = random.nextDouble() * 2 * 1 - 1; // random values between -limit and +limit
             }
         }
     }
@@ -109,7 +109,7 @@ public class ANN {
                 totalError += calculateError(outputs, trainingOutputs[i]);
             }
             totalError /= trainingInputs.length;
-            // System.out.println("Epoch " + epoch + " - Error: " + totalError);
+            System.out.println("Epoch " + epoch + " - Error: " + totalError);
 
             if (totalError < targetError) {
                 break;
@@ -123,5 +123,51 @@ public class ANN {
             error += Math.pow(expectedOutputs[i] - outputs[i], 2);
         }
         return error / 2;
+    }
+
+    public void printWeights() {
+        System.out.println("Input to Hidden Weights:");
+        for (int i = 0; i < inputSize; i++) {
+            for (int j = 0; j < hiddenSize; j++) {
+                System.out.print(weightsInputHidden[i][j] + " ");
+            }
+            System.out.println();
+        }
+
+        System.out.println("Hidden to Output Weights:");
+        for (int j = 0; j < hiddenSize; j++) {
+            for (int k = 0; k < outputSize; k++) {
+                System.out.print(weightsHiddenOutput[j][k] + " ");
+            }
+            System.out.println();
+        }
+    }
+
+    public double[][] normalizeData(double[][] data) {
+        int rows = data.length;
+        int cols = data[0].length;
+        double[][] normalizedData = new double[rows][cols];
+
+        for (int j = 0; j < cols; j++) {
+            double min = Double.MAX_VALUE;
+            double max = Double.MIN_VALUE;
+
+            // Find the min and max for each column
+            for (int i = 0; i < rows; i++) {
+                if (data[i][j] < min) {
+                    min = data[i][j];
+                }
+                if (data[i][j] > max) {
+                    max = data[i][j];
+                }
+            }
+
+            // Normalize each value in the column
+            for (int i = 0; i < rows; i++) {
+                normalizedData[i][j] = (data[i][j] - min) / (max - min);
+            }
+        }
+
+        return normalizedData;
     }
 }
