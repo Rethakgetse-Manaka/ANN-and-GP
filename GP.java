@@ -3,8 +3,8 @@ import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Scanner;
 import java.util.Random;
+import java.util.Scanner;
 
 public class GP {
     public int populationSize = 100;
@@ -14,6 +14,8 @@ public class GP {
     public int mutationDepth = 6;
     public double crossoverRate;
     public double mutationRate;
+    public double bestFitness;
+    private ArrayList<Node> BestParents;
     List<String> terminals = Arrays.asList("cap-diameter", "cap-shape", "gill-attachment", "gill-color", "stem-height",
             "stem-width", "stem-color", "season");
     List<String> functions = Arrays.asList("+", "-", "*", "/");
@@ -28,7 +30,8 @@ public class GP {
         this.crossoverRate = cR;
         this.random = new Random(seed);
         readFile(fileName);
-        fitness = new double[dataset.size()];
+        fitness = new double[populationSize];
+        BestParents = new ArrayList<>();
     }
 
     public void readFile(String fileName) {
@@ -81,7 +84,8 @@ public class GP {
                 if (index == 3) {
                     instance[index] = 0;
                 } else {
-                    instance[index] = (instance[index] - minValues[index]) / (maxValues[index] - minValues[index]);
+                    instance[index] = (instance[index] - minValues[index]) / (maxValues[index] -
+                            minValues[index]);
                 }
 
             }
@@ -161,7 +165,7 @@ public class GP {
 
     public ArrayList<Node> selection(int tournamentSize) {
         ArrayList<Node> selectedParents = new ArrayList<>();
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < tournamentSize; i++) {
             int[] tournamentIndices = new int[tournamentSize];
             for (int j = 0; j < tournamentSize; j++) {
                 tournamentIndices[j] = random.nextInt(populationSize);
@@ -202,67 +206,154 @@ public class GP {
             fitness[index] = fitnessFunction(population.get(index));
             System.out.println(fitness[index]);
         }
-        // for (int i = 0; i < maxGenerations; i++) {
-        // ArrayList<Node> selectedNodes = selection(10);
 
-        // ArrayList<Node> newPopulation = new ArrayList<>();
+        // Perform evolution over generations
+        for (int generation = 0; generation < maxGenerations; generation++) {
+            ArrayList<Node> BestParents = selection((int) Math.ceil(populationSize / 5));
+            ArrayList<Node> newPopulation = new ArrayList<>();
 
-        // int numCrossovers = (int) (crossoverRate * populationSize);
-        // for (int j = 0; j < numCrossovers / 2; j++) {
-        // Node parent1 = selectParent();
-        // Node parent2 = selectParent();
-        // Node[] offspring = crossover(parent1, parent2);
-        // newPopulation.add(offspring[0]);
-        // newPopulation.add(offspring[1]);
-        // }
+            // Selection, crossover, and mutation
+            while (newPopulation.size() < populationSize) {
+                Node parent1 = selectParent(BestParents);
+                Node parent2 = selectParent(BestParents);
 
-        // int numMutations = (int) (mutationRate * populationSize);
-        // // for (int j = 0; j < numMutations; j++) {
-        // // Node parent = selectParent();
-        // // Node mutatedOffspring = mutate(parent);
-        // // newPopulation.add(mutatedOffspring);
-        // // }
-        // }
+                // Crossover
+                Node[] offspring = crossover(parent1, parent2);
+
+                // Mutation
+                offspring[0] = mutate(offspring[0], mutationDepth);
+                offspring[1] = mutate(offspring[1], mutationDepth);
+
+                newPopulation.add(offspring[0]);
+                newPopulation.add(offspring[1]);
+            }
+
+            // Replace the old population with the new population
+            population = newPopulation;
+
+            // Evaluate new population
+            for (int index = 0; index < populationSize; index++) {
+                fitness[index] = fitnessFunction(population.get(index));
+                System.out.println("Generation " + (generation + 1) + ", Tree " + (index + 1) + ": " + fitness[index]);
+            }
+        }
+        // Find the best individual in the final population
+        Node bestIndividual = null;
+        double bestFitness = Double.NEGATIVE_INFINITY;
+        for (int i = 0; i < populationSize; i++) {
+            if (fitness[i] > bestFitness) {
+                bestFitness = fitness[i];
+                bestIndividual = population.get(i);
+            }
+        }
+        System.out.println("Best individual: , Fitness: " + bestFitness);
     }
 
-    private Node[] crossover(Node parent1, Node parent2) {
+    public Node selectParent(ArrayList<Node> bestParents) {
+        int tournamentSize = 10; // Define the tournament size
+        Node bestIndividual = null;
+        double bestFitness = Double.NEGATIVE_INFINITY;
+
+        for (int i = 0; i < tournamentSize; i++) {
+            int randomIndex = random.nextInt(bestParents.size());
+            Node individual = bestParents.get(randomIndex);
+            double individualFitness = fitness[population.indexOf(individual)]; // Get fitness using population index
+
+            if (individualFitness > bestFitness) {
+                bestFitness = individualFitness;
+                bestIndividual = individual;
+            }
+        }
+
+        return bestIndividual;
+    }
+
+    public double calculateAccuracy() {
+        double totalFitness = 0.0;
+
+        // Sum the fitness of all individuals in the population
+        for (int i = 0; i < populationSize; i++) {
+            totalFitness += fitness[i];
+        }
+
+        // Calculate the average fitness
+        double averageFitness = totalFitness / populationSize;
+        return averageFitness;
+    }
+
+    public Node[] crossover(Node parent1, Node parent2) {
         Node[] offspring = new Node[2];
-        int crossoverPoint1 = random.nextInt(maxTreeDepth);
-        int leftOrRight1 = random.nextInt(2);
-        int leftOrRight2 = random.nextInt(2);
-        int crossoverPoint2 = random.nextInt(maxTreeDepth);
-        Node subTree1 = getSubTree(parent1, crossoverPoint1, leftOrRight1);
-        Node subTree2 = getSubTree(parent2, crossoverPoint2, leftOrRight2);
-        offspring[0] = replaceSubTree(parent1, crossoverPoint1, subTree2);
-        offspring[1] = replaceSubTree(parent2, crossoverPoint2, subTree1);
+        offspring[0] = copyTree(parent1);
+        offspring[1] = copyTree(parent2);
+
+        if (random.nextDouble() < crossoverRate) {
+            Node subTree1 = getRandomSubTree(offspring[0]);
+            Node subTree2 = getRandomSubTree(offspring[1]);
+
+            replaceSubTree(offspring[0], subTree1, subTree2);
+            replaceSubTree(offspring[1], subTree2, subTree1);
+        }
+
         return offspring;
     }
 
-    public Node getSubTree(Node parent2, int crossoverPoint2, int leftOrRight) {
-        if (crossoverPoint2 == 0) {
-            return parent2;
+    public Node copyTree(Node tree) {
+        if (tree == null) {
+            return null;
+        }
+        Node copy = new Node(tree.value);
+        copy.left = copyTree(tree.left);
+        copy.right = copyTree(tree.right);
+        return copy;
+    }
+
+    public Node getRandomSubTree(Node tree) {
+        if (tree == null) {
+            return null;
+        }
+        if (random.nextDouble() < 0.5 || (tree.left == null && tree.right == null)) {
+            return tree;
+        }
+        if (random.nextDouble() < 0.5 && tree.left != null) {
+            return getRandomSubTree(tree.left);
+        } else if (tree.right != null) {
+            return getRandomSubTree(tree.right);
         } else {
-            if (leftOrRight == 0) {
-                return getSubTree(parent2.right, crossoverPoint2 - 1, leftOrRight);
-            } else {
-                return getSubTree(parent2.left, crossoverPoint2 - 1, leftOrRight);
+            return tree;
+        }
+    }
+
+    public void replaceSubTree(Node parent, Node oldSubTree, Node newSubTree) {
+        if (parent == null) {
+            return;
+        }
+
+        if (parent.left == oldSubTree) {
+            parent.left = newSubTree;
+        } else if (parent.right == oldSubTree) {
+            parent.right = newSubTree;
+        } else {
+            replaceSubTree(parent.left, oldSubTree, newSubTree);
+            replaceSubTree(parent.right, oldSubTree, newSubTree);
+        }
+    }
+
+    public Node mutate(Node tree, int depth) {
+        if (depth <= 1) {
+            return generateTree(mutationDepth);
+        } else if (tree == null) {
+            return null;
+        } else {
+            Node copy = copyTree(tree);
+            if (random.nextDouble() < mutationRate) {
+                Node subTree = getRandomSubTree(copy);
+                if (subTree != null) {
+                    subTree = generateTree(mutationDepth);
+                }
             }
-
+            copy.left = mutate(copy.left, depth - 1);
+            copy.right = mutate(copy.right, depth - 1);
+            return copy;
         }
-    }
-
-    public Node replaceSubTree(Node parent2, int crossoverPoint2, Node node) {
-        if (crossoverPoint2 == 0) {
-            return node;
-        } else {
-            Node newParent = new Node(parent2.value);
-            newParent.left = replaceSubTree(parent2.left, crossoverPoint2 - 1, node);
-            newParent.right = replaceSubTree(parent2.right, crossoverPoint2 - 1, node);
-            return newParent;
-        }
-    }
-
-    public Node selectParent() {
-        return population.get(random.nextInt(populationSize));
     }
 }
