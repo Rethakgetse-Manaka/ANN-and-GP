@@ -109,7 +109,7 @@ public class ANN {
                 totalError += calculateError(outputs, trainingOutputs[i]);
             }
             totalError /= trainingInputs.length;
-            System.out.println("Epoch " + epoch + " - Error: " + totalError);
+            // System.out.println("Epoch " + epoch + " - Error: " + totalError);
 
             if (totalError < targetError) {
                 break;

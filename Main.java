@@ -31,7 +31,7 @@ public class Main {
         int hiddenSize = 50;
         int outputSize = 1;
         double learningRate = 0.00009;
-        double targetError = 0.09;
+        double targetError = 0.001;
         int epochs = 400;
         ANN neuralNetwork = new ANN(inputSize, hiddenSize, outputSize, learningRate);
         neuralNetwork.train(trainingInputs, trainingOutputs, epochs, targetError);
